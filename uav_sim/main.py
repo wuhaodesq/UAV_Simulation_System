@@ -9,6 +9,7 @@ from .process import (
     load_config,
     run_full_process_simulation,
     save_markdown_summary,
+    save_metrics_csv,
     save_report,
 )
 from .simulator import UAVSimulator
@@ -29,6 +30,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--summary", default="full_process_summary.md", help="全流程Markdown摘要输出路径")
     p.add_argument("--config", default="", help="全流程任务配置 JSON 文件路径")
     p.add_argument("--trials", type=int, default=30, help="鲁棒性蒙特卡洛仿真次数")
+    p.add_argument("--seed", type=int, default=7, help="鲁棒性随机种子")
+    p.add_argument("--metrics", default="mission_metrics.csv", help="任务级指标CSV输出路径")
     return p.parse_args()
 
 
@@ -80,12 +83,19 @@ def main() -> None:
 
     req = RnDRequirements(payload_kg=args.payload, endurance_min=args.endurance, max_wind_mps=args.wind)
     config = load_config(args.config) if args.config else None
-    report = run_full_process_simulation(args.model, req, config=config, robustness_trials=args.trials)
+    report = run_full_process_simulation(
+        args.model,
+        req,
+        config=config,
+        robustness_trials=args.trials,
+        random_seed=args.seed,
+    )
     save_report(report, args.report)
     save_markdown_summary(report, args.summary)
+    save_metrics_csv(report, args.metrics)
 
     print(
-        f"full process report saved: {args.report}, summary saved: {args.summary}, "
+        f"full process report saved: {args.report}, summary saved: {args.summary}, metrics saved: {args.metrics}, "
         f"requirement_pass={report.requirement_pass}, robustness_pass_rate={report.robustness_pass_rate}, "
         f"safety_score={report.safety_score}, overall_pass={report.overall_pass}"
     )

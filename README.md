@@ -18,11 +18,12 @@ python3 -m uav_sim.main \
   --model camera_pro \
   --duration 35 --dt 0.1 \
   --payload 1.0 --endurance 30 --wind 7 \
-  --trials 50 \
+  --trials 50 --seed 42 \
   --output trajectory.csv \
   --plot trajectory.png \
   --report full_process_report.json \
-  --summary full_process_summary.md
+  --summary full_process_summary.md \
+  --metrics mission_metrics.csv
 ```
 
 运行后将生成：
@@ -31,6 +32,7 @@ python3 -m uav_sim.main \
 - `trajectory.png`: 轨迹与无人机外形图（可选，需 matplotlib）
 - `full_process_report.json`: 研发全流程评估结果（需求通过、任务通过、鲁棒性通过率、总体结论）
 - `full_process_summary.md`: 适合评审会共享的文本摘要
+- `mission_metrics.csv`: 任务级关键指标（误差/速度/风速）
 
 ## 参数说明
 
@@ -60,10 +62,12 @@ python3 -m uav_sim.main \
 - `--endurance`: 研发需求续航（min）
 - `--wind`: 研发需求最大风速（m/s）
 - `--trials`: 鲁棒性蒙特卡洛仿真次数
+- `--seed`: 鲁棒性随机种子（保证复现）
 - `--output`: 单次飞行轨迹 CSV 路径
 - `--plot`: 单次飞行图像路径（可选，需要 matplotlib）
 - `--report`: 全流程报告 JSON 路径
 - `--summary`: 全流程 Markdown 摘要路径
+- `--metrics`: 任务级指标 CSV 路径
 - `--config`: 自定义全流程任务配置 JSON 路径（可选）
 
 ## 运行测试

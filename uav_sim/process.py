@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import csv
 import json
 import math
 import random
@@ -178,6 +179,7 @@ def run_full_process_simulation(
     req: RnDRequirements,
     config: Optional[FullProcessConfig] = None,
     robustness_trials: int = 30,
+    random_seed: int = 7,
 ) -> FullProcessReport:
     model = DRONE_PRESETS[model_key]
     requirement_notes = _evaluate_requirements(model, req)
@@ -199,7 +201,7 @@ def run_full_process_simulation(
         mission_results.append(_mission_result(mission, samples))
 
     robustness_target = cfg.missions[-1]
-    robustness_pass_rate = _run_monte_carlo_robustness(sim, robustness_target, robustness_trials)
+    robustness_pass_rate = _run_monte_carlo_robustness(sim, robustness_target, robustness_trials, seed=random_seed)
     safety_score = _calc_safety_score(requirement_pass, mission_results, robustness_pass_rate)
     overall_pass = (
         requirement_pass
@@ -249,6 +251,15 @@ def save_markdown_summary(report: FullProcessReport, output_path: str) -> None:
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+
+
+def save_metrics_csv(report: FullProcessReport, output_path: str) -> None:
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["mission_name", "pass_reach_goal", "final_error_m", "max_speed_mps", "wind_mps"])
+        for m in report.mission_results:
+            writer.writerow([m.mission_name, m.pass_reach_goal, m.final_error_m, m.max_speed_mps, m.wind_mps])
+
 
 
 def load_config(config_path: str) -> FullProcessConfig:

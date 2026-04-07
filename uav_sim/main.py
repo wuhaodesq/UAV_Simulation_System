@@ -4,7 +4,7 @@ import csv
 from .controllers import WaypointController
 from .models import DRONE_PRESETS
 from .physics import Vec3
-from .process import RnDRequirements, run_full_process_simulation, save_report
+from .process import RnDRequirements, load_config, run_full_process_simulation, save_report
 from .simulator import UAVSimulator
 from .visualization import render_trajectory_with_drone
 
@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--endurance", type=float, default=30.0, help="研发需求续航(min)")
     p.add_argument("--wind", type=float, default=6.0, help="研发需求最大风速(m/s)")
     p.add_argument("--report", default="full_process_report.json", help="全流程评估报告输出路径")
+    p.add_argument("--config", default="", help="全流程任务配置 JSON 文件路径")
     return p.parse_args()
 
 
@@ -70,17 +71,22 @@ def main() -> None:
     run_single_flight(args.model, args.duration, args.dt, args.output, args.plot)
 
     req = RnDRequirements(payload_kg=args.payload, endurance_min=args.endurance, max_wind_mps=args.wind)
-    report = run_full_process_simulation(args.model, req)
+    config = load_config(args.config) if args.config else None
+    report = run_full_process_simulation(args.model, req, config=config)
     save_report(report, args.report)
 
     print(
         f"full process report saved: {args.report}, "
-        f"requirement_pass={report.requirement_pass}, overall_pass={report.overall_pass}"
+        f"requirement_pass={report.requirement_pass}, safety_score={report.safety_score}, overall_pass={report.overall_pass}"
     )
     if report.requirement_notes:
         print("requirement notes:")
         for note in report.requirement_notes:
             print(f"- {note}")
+
+    print("recommendations:")
+    for rec in report.recommendations:
+        print(f"- {rec}")
 
 
 if __name__ == "__main__":

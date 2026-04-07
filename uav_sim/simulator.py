@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Callable, Iterable, List, Optional
 
 from .controllers import WaypointController
 from .models import DroneModel
@@ -18,7 +18,13 @@ class UAVSimulator:
         self.controller = controller
         self.physics = SimplePhysics(model.drag_coeff, model.max_speed_mps)
 
-    def run(self, waypoints: Iterable[Vec3], duration: float, dt: float) -> List[Sample]:
+    def run(
+        self,
+        waypoints: Iterable[Vec3],
+        duration: float,
+        dt: float,
+        disturbance_fn: Optional[Callable[[float, UAVState], Vec3]] = None,
+    ) -> List[Sample]:
         if dt <= 0:
             raise ValueError("dt must be positive")
         if duration <= 0:
@@ -36,6 +42,11 @@ class UAVSimulator:
         while t <= duration:
             target = wp[idx]
             accel = self.controller.command(state, target)
+
+            if disturbance_fn is not None:
+                d = disturbance_fn(t, state)
+                accel = Vec3(accel.x + d.x, accel.y + d.y, accel.z + d.z)
+
             state = self.physics.step(state, accel, dt)
 
             if (

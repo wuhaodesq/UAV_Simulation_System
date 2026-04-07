@@ -4,24 +4,27 @@ import csv
 from .controllers import WaypointController
 from .models import DRONE_PRESETS
 from .physics import Vec3
+from .process import RnDRequirements, run_full_process_simulation, save_report
 from .simulator import UAVSimulator
 from .visualization import render_trajectory_with_drone
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="UAV flight simulation")
+    p = argparse.ArgumentParser(description="UAV R&D full-process simulation platform")
     p.add_argument("--model", default="quad_light", choices=sorted(DRONE_PRESETS.keys()))
     p.add_argument("--duration", type=float, default=30.0)
     p.add_argument("--dt", type=float, default=0.1)
     p.add_argument("--output", default="trajectory.csv")
     p.add_argument("--plot", default="", help="输出仿真图像路径，例如 trajectory.png")
+    p.add_argument("--payload", type=float, default=0.5, help="研发需求载荷(kg)")
+    p.add_argument("--endurance", type=float, default=30.0, help="研发需求续航(min)")
+    p.add_argument("--wind", type=float, default=6.0, help="研发需求最大风速(m/s)")
+    p.add_argument("--report", default="full_process_report.json", help="全流程评估报告输出路径")
     return p.parse_args()
 
 
-def main() -> None:
-    args = parse_args()
-    model = DRONE_PRESETS[args.model]
-
+def run_single_flight(model_key: str, duration: float, dt: float, output_csv: str, plot: str) -> None:
+    model = DRONE_PRESETS[model_key]
     controller = WaypointController(max_accel_mps2=model.max_accel_mps2)
     sim = UAVSimulator(model, controller)
 
@@ -31,9 +34,9 @@ def main() -> None:
         Vec3(5, 25, 10),
         Vec3(0, 0, 2),
     ]
-    samples = sim.run(mission, duration=args.duration, dt=args.dt)
+    samples = sim.run(mission, duration=duration, dt=dt)
 
-    with open(args.output, "w", newline="", encoding="utf-8") as f:
+    with open(output_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["t", "x", "y", "z", "vx", "vy", "vz"])
         for s in samples:
@@ -47,18 +50,37 @@ def main() -> None:
                 f"{s.state.vz:.3f}",
             ])
 
-    if args.plot:
+    if plot:
         try:
-            image = render_trajectory_with_drone(samples, args.plot)
+            image = render_trajectory_with_drone(samples, plot)
             print(f"trajectory image saved: {image}")
         except RuntimeError as exc:
             print(f"skip plot: {exc}")
 
     final = samples[-1].state
     print(
-        f"model={model.name}, final_pos=({final.x:.2f},{final.y:.2f},{final.z:.2f}), "
-        f"final_vel=({final.vx:.2f},{final.vy:.2f},{final.vz:.2f}), samples={len(samples)}"
+        f"single flight model={model.name}, final_pos=({final.x:.2f},{final.y:.2f},{final.z:.2f}), "
+        f"samples={len(samples)}"
     )
+
+
+def main() -> None:
+    args = parse_args()
+
+    run_single_flight(args.model, args.duration, args.dt, args.output, args.plot)
+
+    req = RnDRequirements(payload_kg=args.payload, endurance_min=args.endurance, max_wind_mps=args.wind)
+    report = run_full_process_simulation(args.model, req)
+    save_report(report, args.report)
+
+    print(
+        f"full process report saved: {args.report}, "
+        f"requirement_pass={report.requirement_pass}, overall_pass={report.overall_pass}"
+    )
+    if report.requirement_notes:
+        print("requirement notes:")
+        for note in report.requirement_notes:
+            print(f"- {note}")
 
 
 if __name__ == "__main__":

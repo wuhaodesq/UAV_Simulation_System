@@ -4,7 +4,13 @@ import csv
 from .controllers import WaypointController
 from .models import DRONE_PRESETS
 from .physics import Vec3
-from .process import RnDRequirements, load_config, run_full_process_simulation, save_report
+from .process import (
+    RnDRequirements,
+    load_config,
+    run_full_process_simulation,
+    save_markdown_summary,
+    save_report,
+)
 from .simulator import UAVSimulator
 from .visualization import render_trajectory_with_drone
 
@@ -20,7 +26,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--endurance", type=float, default=30.0, help="研发需求续航(min)")
     p.add_argument("--wind", type=float, default=6.0, help="研发需求最大风速(m/s)")
     p.add_argument("--report", default="full_process_report.json", help="全流程评估报告输出路径")
+    p.add_argument("--summary", default="full_process_summary.md", help="全流程Markdown摘要输出路径")
     p.add_argument("--config", default="", help="全流程任务配置 JSON 文件路径")
+    p.add_argument("--trials", type=int, default=30, help="鲁棒性蒙特卡洛仿真次数")
     return p.parse_args()
 
 
@@ -72,12 +80,14 @@ def main() -> None:
 
     req = RnDRequirements(payload_kg=args.payload, endurance_min=args.endurance, max_wind_mps=args.wind)
     config = load_config(args.config) if args.config else None
-    report = run_full_process_simulation(args.model, req, config=config)
+    report = run_full_process_simulation(args.model, req, config=config, robustness_trials=args.trials)
     save_report(report, args.report)
+    save_markdown_summary(report, args.summary)
 
     print(
-        f"full process report saved: {args.report}, "
-        f"requirement_pass={report.requirement_pass}, safety_score={report.safety_score}, overall_pass={report.overall_pass}"
+        f"full process report saved: {args.report}, summary saved: {args.summary}, "
+        f"requirement_pass={report.requirement_pass}, robustness_pass_rate={report.robustness_pass_rate}, "
+        f"safety_score={report.safety_score}, overall_pass={report.overall_pass}"
     )
     if report.requirement_notes:
         print("requirement notes:")

@@ -7,7 +7,8 @@
 - **需求阶段仿真校核**：根据载荷、续航、抗风需求检查机型可行性
 - **方案阶段飞行模拟**：多航点飞行、控制器闭环、简化 3D 动力学
 - **验证阶段可靠性场景**：可注入风扰动，评估任务到达误差
-- **可视化与资产沉淀**：输出轨迹 CSV、无人机外形叠加图、全流程 JSON 报告
+- **鲁棒性蒙特卡洛评估**：随机风场批量仿真，输出通过率
+- **可视化与资产沉淀**：输出轨迹 CSV、无人机外形叠加图、全流程 JSON 报告、Markdown 摘要
 - **研发决策辅助**：输出 safety score（0-100）与自动化研发建议
 
 ## 快速开始
@@ -17,16 +18,19 @@ python3 -m uav_sim.main \
   --model camera_pro \
   --duration 35 --dt 0.1 \
   --payload 1.0 --endurance 30 --wind 7 \
+  --trials 50 \
   --output trajectory.csv \
   --plot trajectory.png \
-  --report full_process_report.json
+  --report full_process_report.json \
+  --summary full_process_summary.md
 ```
 
 运行后将生成：
 
 - `trajectory.csv`: 单次飞行轨迹
 - `trajectory.png`: 轨迹与无人机外形图（可选，需 matplotlib）
-- `full_process_report.json`: 研发全流程评估结果（需求通过、任务通过、总体结论）
+- `full_process_report.json`: 研发全流程评估结果（需求通过、任务通过、鲁棒性通过率、总体结论）
+- `full_process_summary.md`: 适合评审会共享的文本摘要
 
 ## 参数说明
 
@@ -55,9 +59,11 @@ python3 -m uav_sim.main \
 - `--payload`: 研发需求载荷（kg）
 - `--endurance`: 研发需求续航（min）
 - `--wind`: 研发需求最大风速（m/s）
+- `--trials`: 鲁棒性蒙特卡洛仿真次数
 - `--output`: 单次飞行轨迹 CSV 路径
 - `--plot`: 单次飞行图像路径（可选，需要 matplotlib）
 - `--report`: 全流程报告 JSON 路径
+- `--summary`: 全流程 Markdown 摘要路径
 - `--config`: 自定义全流程任务配置 JSON 路径（可选）
 
 ## 运行测试

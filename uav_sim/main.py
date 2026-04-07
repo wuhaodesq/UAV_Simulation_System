@@ -5,6 +5,7 @@ from .controllers import WaypointController
 from .models import DRONE_PRESETS
 from .physics import Vec3
 from .simulator import UAVSimulator
+from .visualization import render_trajectory_with_drone
 
 
 def parse_args() -> argparse.Namespace:
@@ -13,6 +14,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--duration", type=float, default=30.0)
     p.add_argument("--dt", type=float, default=0.1)
     p.add_argument("--output", default="trajectory.csv")
+    p.add_argument("--plot", default="", help="输出仿真图像路径，例如 trajectory.png")
     return p.parse_args()
 
 
@@ -44,6 +46,13 @@ def main() -> None:
                 f"{s.state.vy:.3f}",
                 f"{s.state.vz:.3f}",
             ])
+
+    if args.plot:
+        try:
+            image = render_trajectory_with_drone(samples, args.plot)
+            print(f"trajectory image saved: {image}")
+        except RuntimeError as exc:
+            print(f"skip plot: {exc}")
 
     final = samples[-1].state
     print(

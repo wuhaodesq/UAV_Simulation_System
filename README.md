@@ -9,11 +9,12 @@
 - 基于 PID 思想的航点跟随控制器
 - 可配置仿真步长、总时长、目标航点
 - 输出轨迹 CSV，便于二次分析与可视化
+- 提供无人机外形（X 型四旋翼）俯视图叠加到仿真轨迹
 
 ## 快速开始
 
 ```bash
-python3 -m uav_sim.main --model quad_light --duration 40 --dt 0.05 --output trajectory.csv
+python3 -m uav_sim.main --model quad_light --duration 40 --dt 0.05 --output trajectory.csv --plot trajectory.png
 ```
 
 运行后会在终端打印最终状态，并在 `trajectory.csv` 中保存每一时刻状态。
@@ -24,6 +25,7 @@ python3 -m uav_sim.main --model quad_light --duration 40 --dt 0.05 --output traj
 - `--duration`: 仿真总时长（秒）
 - `--dt`: 时间步长（秒）
 - `--output`: 轨迹输出文件路径
+- `--plot`: 轨迹图像输出路径（可选，需要 matplotlib）
 
 ## 运行测试
 
